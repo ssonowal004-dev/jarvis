@@ -1,4 +1,4 @@
-from voice.listen import listen
+from voice.whisper_listen import listen
 from voice.speak import speak
 
 from brain.ai import (
@@ -6,9 +6,17 @@ from brain.ai import (
     start_ollama
 )
 
+import sys
+
 from router.intent import detect_intent
 
 from router.dispatcher import handle_intent
+
+
+def is_stop(text):
+    stop_words = ["stop", "exit", "quit", "shutdown", "shut down",
+                  "bye", "goodbye", "turn off"]
+    return any(word in text for word in stop_words)
 
 
 print("JARVIS INITIALIZING...")
@@ -36,6 +44,17 @@ while True:
     command = command.lower().strip()
 
     print(f"You: {command}")
+
+
+    # CHECK IF SHUTDOWN COMMAND
+
+    if is_stop(command):
+
+        speak("Goodbye sir. Shutting down.")
+
+        print("JARVIS OFFLINE")
+
+        sys.exit()
 
 
     # SIMPLE WAKE RESPONSE

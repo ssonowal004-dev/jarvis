@@ -8,12 +8,46 @@ from tools.apps import (
 
 from brain.ai import ask_ai
 
+from memory.memory import remember, recall
+
 
 def handle_intent(intent, command):
 
+    # REMEMBER
+    if intent == "remember":
+
+        command = command.lower()
+
+        command = command.replace("remember", "").replace("that", "").replace("my", "").strip()
+
+        if " is " in command:
+
+            key, value = command.split(" is ", 1)
+
+            return remember(
+                key.strip(),
+                value.strip()
+            )
+
+        return "Please tell me what to remember."
+
+
+    # RECALL
+    elif intent == "recall":
+
+        command = command.lower()
+
+        key = command.replace(
+            "what is my",
+            ""
+        ).replace("who am i", "name").replace("that", "").replace("my", "").strip()
+
+        return recall(key)
+
+
     # OPEN APP
 
-    if intent == "open_app":
+    elif intent == "open_app":
 
         return open_application(command)
 
