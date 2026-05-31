@@ -1,68 +1,83 @@
+import whisper
 import speech_recognition as sr
 
+
+model = whisper.load_model("base")
+
+
 recognizer = sr.Recognizer()
-recognizer.pause_threshold = 0.5
-recognizer.phrase_threshold = 0.2
-recognizer.non_speaking_duration = 0.2
-recognizer.dynamic_energy_threshold = True
 
 
-# FIXED: correct common mishearings after transcription
+import re
+
+# FIXED: correct common mishearings after transcription using word boundaries
 def fix_text(text):
 
     fixes = {
-        "open note"         : "open notepad",
-        "open notes"        : "open notepad",
-        "open noted"        : "open notepad",
-        "open noting"       : "open notepad",
-        "open not"          : "open notepad",
-        "note"              : "notepad",       # FIXED: bare "note" → "notepad"
-        "close note"        : "close notepad",
-        "close notes"       : "close notepad",
-        "open calculated"   : "open calculator",
-        "open calculate"    : "open calculator",
-        "open calculating"  : "open calculator",
-        "open cmd"          : "open command prompt",
-        "open command"      : "open command prompt",
-        "open vs"           : "open vs code",
-        "open visual"       : "open vs code",
+        r"\bopen note\b": "open notepad",
+        r"\bopen notes\b": "open notepad",
+        r"\bopen noted\b": "open notepad",
+        r"\bopen noting\b": "open notepad",
+        r"\bopen not\b": "open notepad",
+        r"\bnote\b": "notepad",
+        r"\bclose note\b": "close notepad",
+        r"\bclose notes\b": "close notepad",
+        r"\bopen calculated\b": "open calculator",
+        r"\bopen calculate\b": "open calculator",
+        r"\bopen calculating\b": "open calculator",
+        r"\bopen cmd\b": "open command prompt",
+        r"\bopen command\b(?! prompt)": "open command prompt",
+        r"\bopen vs\b": "open vs code",
+        r"\bopen visual\b": "open vs code",
     }
 
-    for wrong, correct in fixes.items():
-        if wrong in text:
-            text = text.replace(wrong, correct)
+    for pattern, correct in fixes.items():
+        text = re.sub(pattern, correct, text)
 
     return text
 
 
 def listen():
 
-    with sr.Microphone() as source:
+    try:
 
-        print(">>> Listening for command...")
+        with sr.Microphone() as source:
 
-        recognizer.adjust_for_ambient_noise(source, duration=0.2)
+            print("Listening...")
 
-        try:
+            recognizer.adjust_for_ambient_noise(
+                source,
+                duration=1
+            )
+
             audio = recognizer.listen(
                 source,
-                timeout=6,
+                timeout=10,
                 phrase_time_limit=8
             )
-        except sr.WaitTimeoutError:
-            print("No speech heard.")
-            return ""
 
-    try:
-        text = recognizer.recognize_google(audio, language="en-IN").lower()
-        text = fix_text(text)          # FIXED: apply corrections
-        print("You said:", text)
-        return text
+            print("Recognizing...")
 
-    except sr.UnknownValueError:
-        print("Could not understand.")
-        return ""
+            with open("temp.wav", "wb") as f:
 
-    except sr.RequestError as e:
-        print("Google Speech error:", e)
+                f.write(audio.get_wav_data())
+
+            result = model.transcribe(
+                "temp.wav",
+                language="en"
+            )
+
+            text = result["text"].strip()
+
+            text = text.lower()
+            text = fix_text(text)
+
+            print("You said:", text)
+
+            return text
+
+    except Exception as e:
+
+        print("Listening Error:", e)
+
         return ""

@@ -3,10 +3,25 @@ def detect_intent(command):
     command = command.lower().strip()
 
 
+    # MEMORY SAVE
+    if "remember" in command:
+
+        return "remember"
+
+
+    # MEMORY RECALL
+    elif (
+        "what is my" in command
+        or "who am i" in command
+    ):
+
+        return "recall"
+
+
     # CLOSE APPS FIRST
     # IMPORTANT
 
-    if command.startswith("close"):
+    elif command.startswith("close"):
 
         return "close_app"
 
